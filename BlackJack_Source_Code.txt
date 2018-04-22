@@ -1,0 +1,532 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <random>
+#include <chrono>
+
+using namespace std;
+
+class Player{
+    private:
+    string name;
+    int money;
+    int cardSum;
+    int bet;
+    vector<int> cards;
+    
+    public:
+    friend class BlackJack;
+    Player(); //for dealer
+    Player(string);
+    void setMoney(int); // change money amounts
+    int getMoney();
+    string getName();
+    void setBet();
+    int getBet();
+    void setCards(int);
+    vector<int> getCards();
+    void setCardSum(int);
+    int getCardSum();
+    void reset();
+    void hit(vector<int>&);
+    void bust(char&);
+    void count(char&);
+    void doubleDown(vector<int>&,char&);
+    
+};
+
+Player::Player(){
+    name = "Dealer";
+    money = 1000000;
+    cardSum = 0;
+    bet = 0;
+}
+
+Player::Player(string title){ //const players
+    name = title;
+    money = 10000;
+    cardSum = 0;
+}
+
+string Player::getName(){ // return name
+    return name;
+}
+
+void Player::setMoney(int win){
+    money += win;
+    return;
+}
+
+int Player::getMoney(){ //return money amount
+    return money;
+}
+
+
+void Player::setBet(){
+    bool boolean1 = false;
+    string input = " ";
+    int num=0;
+    int check=0;
+    
+    while(boolean1 == false){
+        while(check != input.length()){
+            cout << "Betting limits are $2 - $500\n";
+            cout << "What would you like to bet this round, " << this->name << "?\n";
+            cout << "You currently have $" << this->money << endl << endl;
+            cin >> input;
+            for(int i = 0;i<input.length();i++){
+                if(isdigit(input.at(i))){
+                    check++;
+                }
+            }
+        }
+        check = 0;
+        num = stoi(input);
+        if(num >= 2 && num <= 500){
+            boolean1 = true;
+        }
+        else{
+            input = "abcd";
+        }
+    }
+    
+    
+    
+    
+    bet = num;
+    money = money - num; 
+    return;
+}
+
+int Player::getBet(){
+    return bet;
+}
+
+void Player::setCards(int card){ // adds card to players hand(vector)
+    cards.push_back(card);
+    return;
+}
+vector<int> Player::getCards(){ // returns vector of cards
+    return cards;
+}
+
+void Player::setCardSum(int card){
+    cardSum += card;
+    return;
+}
+
+int Player::getCardSum(){
+    return cardSum;
+}
+
+void Player::reset(){
+    bet = 0;
+    cardSum = 0;
+    //for(int i = 0; i<cards.size();i++){
+        cards.resize(0);
+    //}
+    
+    return;
+}
+
+void Player::hit(vector<int> &deck){
+    int card;
+    card = deck.at(deck.size()-1);
+    deck.pop_back();
+    this->setCardSum(card);
+    this->setCards(card);
+    if(name != "Dealer"){
+        cout << name << ", you got a " << card << endl << endl;
+    }
+    return;
+}
+
+void Player::count(char &choice){
+    if(cardSum >21){
+        for(int i = 0;i < cards.size();i++){
+            if(cards.at(i) == 11){
+                cards.at(i) = 1;
+                cardSum = cardSum - 10;
+            }
+        }
+    }
+    if(cardSum > 21){
+        this->bust(choice);
+        choice = 's';
+    }
+    return;
+}
+
+void Player::bust(char &choice){
+    cout << name << ", You bust!\nSorry, you lose $" << bet << endl << endl;
+    this->reset();
+    choice = 's';
+    return;
+}
+
+void Player::doubleDown(vector<int> &deck, char &choice){
+    cout << name << ", your bet has doubled from $" << bet << " to $" << bet*2 << "!\n";
+    cout << "You now get one more card. \n";
+    bet = bet*2;
+    this->hit(deck);
+    this->count(choice); //doubles bet, gives one card, then ends turn
+    choice = 's';
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+class BlackJack{
+    private:
+    
+    bool game;
+    
+    
+    public:
+    friend class Player;
+    BlackJack(){
+        game = true;
+    }
+    
+    void setGame(bool answer){
+        game = answer;
+        return;
+    }
+    
+    bool getGame(){
+        return game;
+    }
+    
+    
+    
+    //Deals cards
+    void deal(Player &Dealer, vector<Player> &Players, vector<int> &deck){
+        cout << endl << endl << endl;
+        
+        //Deal first card to players
+        for(int i = 0;i<Players.size();i++){
+            Players.at(i).hit(deck);
+            cout << endl;
+        }
+        //Deal dealers first card
+        Dealer.hit(deck);
+        cout << "Dealer's first card is " << Dealer.getCards().at(0) << endl;
+        //Deal second round of player cards
+        for(int i = 0;i<Players.size();i++){
+            Players.at(i).hit(deck);
+            cout << endl;
+            cout << Players.at(i).getName() << ", Your hand is " << (Players.at(i).getCards()).at(0) << " and " << (Players.at(i).getCards()).at(1) << endl<<endl;
+        }
+        //Deal dealers second card
+        Dealer.hit(deck);
+        return;
+    }
+    
+    //Adds players
+    void addPlayers(vector<Player> &Players){
+        char numPlayers;
+        string name;
+        cout << "How many players will play?\n";
+        cin >> numPlayers;
+        while(!isdigit(numPlayers)){
+            cout << "Please enter the number of players.\n";      //numPlayers is char for isdigit comparison
+            cin >> numPlayers;                                    //When static casted to int, it is ASCII (0 = 48)
+                                                                  //hence the -48 in line 188
+            cout << endl;
+        }
+        int numberPlayers = static_cast<int>(numPlayers) -48;
+        
+        for(int i = 0;i<numberPlayers;i++){
+            cout << "Player " << i+1 <<", what's your name?\n";
+            cin >> name;
+            Players.push_back(Player(name));
+        }
+        
+        for(int i=0;i<numberPlayers;i++){
+            cout << "Welcome ";
+            cout << Players.at(i).getName(); 
+            cout << "!" << endl;
+            cout << "You have " << Players.at(i).getMoney() << " dollars." << endl <<endl<<endl;
+        }
+    }
+    
+    void makeDeck(vector<int> &deck){
+        deck.resize(52);
+        int spot = 0;
+        while(spot<52){
+            for(int i = 0;i<4;i++){
+                for(int d = 2;d<=11;d++){
+                    deck.at(spot) = d;
+                    spot++;
+                }
+                for(int j = 0;j<3;j++){
+                    deck.at(spot)=10;
+                    spot++;
+                }
+            }
+        }
+        return;
+    }
+    
+    void houseWins(Player &Dealer, vector<Player> &Players){ //takes money unless player has 21 (bet returned)
+        int ante;
+        for(int i =0;i<Players.size();i++){
+            if(Players.at(i).getCardSum() != 21){
+                cout << Players.at(i).getName() << ", you lose $" << Players.at(i).getBet() << endl<< endl;
+                Players.at(i).reset();
+            }
+            else{
+                ante = Players.at(i).getBet();
+                Players.at(i).setMoney(ante);
+                cout << Players.at(i).getName() << ", you keep your bet of $" << ante << endl << endl;
+                Players.at(i).reset();
+            }
+        }
+        Dealer.reset();
+        
+        return;
+    }
+    
+    void checkCards(Player Dealer,vector<Player> &Players){ //sees if anyone has 21 
+        int ante;
+        if(Dealer.getCardSum() == 21){
+            cout << "Dealer Has 21!\n";
+            houseWins(Dealer,Players);
+        }
+        for(int i = 0 ; i<Players.size();i++ ){
+            if(Players.at(i).getCardSum() == 21){
+                cout << Players.at(i).getName() << ", You Got 21!\n";
+                ante = Players.at(i).getBet();
+                cout << "You win $" << ante*1.5 << endl << endl;
+                Players.at(i).setMoney(ante*2.5);
+                Players.at(i).reset();
+            }
+            
+        }
+        return;
+    }
+    
+    void shuffleCards(vector<int> &deck){
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+        shuffle (deck.begin(), deck.end(), std::default_random_engine(seed));
+    }
+    
+    void play(Player &Dealer, vector<Player> &Players, vector<int> &deck){
+        for(int i = 0; i<Players.size(); i++){
+            if(Players.at(i).getBet() > 0){ //Only play if you didn't lose
+                char choice;
+                bool dd = false; //double down opportunity (gets 9,10,11 card sum)
+                
+                if(Players.at(i).getCardSum() >= 9 && Players.at(i).getCardSum() <= 11){ //if player has 9,10,11 they can double down
+                    dd = true;
+                }
+                
+                if(dd == false){
+                    cout << Players.at(i).getName() << ", your total is " << Players.at(i).getCardSum() << ", what would you like to do?\nHit (h) or Stay (s)\n\n";
+                    cin >> choice;
+                    
+                    while(choice != 'h' && choice != 'H' && choice != 's' && choice != 'S'){
+                        cout << "Please select Hit (h) or stay (s)\n\n";
+                        cin >> choice;
+                    }
+                    while(choice == 'h'|| choice == 'H'){
+                        Players.at(i).hit(deck);
+                        Players.at(i).count(choice);
+                        if(choice == 'h'){
+                            cout << Players.at(i).getName() << ", your total is " << Players.at(i).getCardSum() << ", what would you like to do?\nHit (h) or Stay (s)\n\n";
+                            cin >> choice;
+                            
+                            while(choice != 'h' && choice != 'H' && choice != 's' && choice != 'S'){
+                                cout << "Please select Hit (h) or stay (s)\n\n";
+                                cin >> choice;
+                            }
+                        }
+                        else{
+                            choice = 's';
+                        }
+                    }
+                }
+                else if(dd ==true){
+                    cout << Players.at(i).getName() << ", your total is " << Players.at(i).getCardSum() << ", what would you like to do?\nHit (h) double down (d) or Stay (s)\n\n";
+                    cin >> choice;
+                    
+                    while(choice != 'h' && choice != 'H' && choice != 's' && choice != 'S' && choice != 'd' && choice != 'D'){
+                        cout << "Please select Hit (h) double down (d) or stay (s)\n\n";
+                        cin >> choice;
+                    }
+                    
+                    if(choice == 'd' || choice == 'D'){
+                        Players.at(i).doubleDown(deck,choice);
+                        choice = 's';
+                    }
+                    
+                    while(choice == 'h'|| choice == 'H'){
+                        Players.at(i).hit(deck);
+                        Players.at(i).count(choice);
+                        if(choice == 'h'){
+                            cout << Players.at(i).getName() << ", your total is " << Players.at(i).getCardSum() << ", what would you like to do?\nHit (h) or Stay (s)\n\n";
+                            cin >> choice;
+                            
+                            while(choice != 'h' && choice != 'H' && choice != 's' && choice != 'S'){
+                                cout << "Please select Hit (h) or stay (s)\n\n";
+                                cin >> choice;
+                            }
+                        }
+                        else{
+                            choice = 's';
+                        }
+                    }
+                }
+            }
+        }
+        int yes = 0;
+        for(int i = 0; i<Players.size(); i++){   //if any players remain
+            if(Players.at(i).getCardSum() > 0){
+                yes = 1;
+            }
+        }
+        int payout;
+        if(yes == 1){
+            while(Dealer.getCardSum() < 17){  //dealer is dealt until sum >= 17 (casino rule)
+                Dealer.hit(deck);
+            }
+            if(Dealer.getCardSum() > 21){
+                cout << "Dealer busts! \n\n";
+                Dealer.reset();
+                for(int i = 0; i<Players.size(); i++){
+                    payout = Players.at(i).getBet() *2;
+                    if(payout > 0){
+                        cout << Players.at(i).getName() << ", you win $" << payout << endl << endl;         //if dealer busts, remaining players win
+                        Players.at(i).setMoney(payout);
+                        Players.at(i).reset();
+                    }
+                }
+            }
+            else{
+                cout << "Dealer total is " << Dealer.getCardSum() << endl << endl;              //else compare cards of players to dealer
+                for(int i = 0; i<Players.size(); i++){
+                    if(Players.at(i).getCardSum() > 0){
+                        if(Dealer.getCardSum() > Players.at(i).getCardSum()){
+                            Players.at(i).reset();
+                            cout << "Sorry " << Players.at(i).getName() << ", you do not win" << endl << endl;      //if dealer sum is greater, player loses
+                            Players.at(i).reset();
+                        }
+                        else if(Players.at(i).getCardSum() > Dealer.getCardSum()){
+                            cout << "Congrats " << Players.at(i).getName() << ", you win $" << Players.at(i).getBet()  << "!\n\n";//if player sum greater, player wins
+                            payout = Players.at(i).getBet() *2;
+                            Players.at(i).setMoney(payout);
+                            Players.at(i).reset();
+                        }
+                        else{
+                            cout << Players.at(i).getName() << ", you tie with the dealer. You get your bet back. \n\n";//if player = dealer, player gets bet back
+                            payout = Players.at(i).getBet();
+                            Players.at(i).setMoney(payout);
+                            Players.at(i).reset();
+                        }
+                    }
+                }
+            }
+            
+        }
+        
+        return;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    void playGame(){
+        Player Dealer;//creates house to play against
+        vector<Player> Players; //vector of players
+        vector<int> deck;  //creates deck of cards
+        //sets up cards
+        //makeDeck(deck);
+        
+        
+        addPlayers(Players);
+        
+        
+        while(getGame()){
+            
+            if(deck.size() <26){ //makes deck initially and everytime deck is half size, shuffles after making deck
+                makeDeck(deck);
+                shuffleCards(deck);
+            }
+            
+            
+            for(int i = 0; i<Players.size();i++){ //grabs bet for round
+                Players.at(i).setBet();
+            }
+            
+            //Deals cards
+            deal(Dealer, Players, deck); //deals cards
+            
+            
+            
+            //checks for 21
+            checkCards(Dealer,Players); //checks if anyone has 21 after first deal
+            
+            play(Dealer, Players, deck);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            string option;
+            cout << "Would you like to play another round?\n";
+            cout << "yes 'y' or no 'n'\n";
+            cin >> option;
+            while(option != "y" && option != "n" && option != "N" && option != "Y"){
+                cout << "Please select 'y' or 'n'\n";
+                cin >> option;
+            }
+            if(option =="n" || option =="N"){
+                game = 0;
+            }
+            
+            for(int i = 0; i<Players.size();i++){
+                if(Players.at(i).getCardSum() > 0){
+                    Players.at(i).reset();
+                }   
+            }
+            if(Dealer.getCardSum() > 0){
+                Dealer.reset();
+            }
+        }
+        
+        
+        cout << "Thanks for playing!\n";
+        
+        return;
+    }
+};
+
+
+
+
+
+
+
+int main(){
+    BlackJack X;
+    X.playGame();
+    return 0;
+}
